@@ -1,0 +1,3 @@
+<template>
+    Update Profile
+</template>
