@@ -1,13 +1,16 @@
 <script setup>
     import { onMounted, reactive, ref } from "vue";
-    import { Form, Field } from "vee-validate";
-    import * as yup from "yup";
     import axios from 'axios';
     
-    const users = ref([]);
+    const users = ref({});
     const editing = ref(false)
-    const formValues = ref();
-    const form = ref(null)
+
+    var errors = ref({});
+    const userForm = reactive({
+        name: '',
+        email: '',
+        password: ''
+    })
     
     const getUsers = () => {
         axios.get('/api/users')
@@ -16,38 +19,47 @@
         })
     }
 
-    //validation-schema
-    const schema = yup.object({
-        name: yup.string().required(),
-        email: yup.string().email().required(),
-        password: yup.string().required().min(8)
-    });
-
     //show modal for create
     const addUser = () => {
         editing.value = false
         $('#userFormModal').modal('show')
     }
     //create user
-    const createUser = (values, { resetForm }) => {
-        axios.post('/api/users', values)
-                    .then((response) => {
-                        users.value.unshift(response.data.data)
-                        $('#userFormModal').modal('hide');
-                        resetForm()
+    const createUser = () => { axios.post('/api/users',userForm)
+        .then( (res) => {
+        $('#userFormModal').modal('hide')
+          userForm.name =''
+          userForm.email =''
+          userForm.password =''
+          errors.value=''
+          getUsers()
+        }).catch((error) => {
+            if (error.response) {
+                errors.value = error.response.data.errors
+            }
         })
     }
-
-    //edit User modal
+    // edit User modal
     const editUser = (user) => {
-        editing.value = true
-        form.value.resetForm();
+    console.log(user)
+        editing.value = true;
         $('#userFormModal').modal('show');
-        formValues.value = { 
-            id: user.id,
-            name: user.name,
-            email: user.email,
-        };
+        userForm.name = user.name
+        userForm.email = user.email
+        userForm.password = user.password
+    }
+
+    const UpdateUser = (id) => {
+        axios.put('/api/users/${id}/update', userForm)
+            .then((res) => {
+                console.log(res)
+            })
+    }
+    const resetForm = () => {
+        errors.value = ''
+        userForm.name = null
+        userForm.email = null
+        userForm.password = null
     }
 
     onMounted(() => {
@@ -120,33 +132,33 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <Form ref="form" @submit="createUser" :validation-schema="schema" v-slot="{errors}" :initial-values="formValues">
+                <form @submit.prevent="createUser">
                     <div class="modal-body">
                             <div class="form-group">
                                 <label for="name">Name</label>
-                                <Field name="name" v-model="formValues.name" type="text" class="form-control" :class="{'is-invalid': errors.name}" id="name" aria-describedby="nameHelp" placeholder="Enter full name" />
-                                <span class="invalid-feedback">{{ errors.name }}</span>
+                                <input v-model="userForm.name" type="text" class="form-control" :class="{'is-invalid': errors?.name}" id="name" placeholder="Enter full name" />
+                                <span class="invalid-feedback" v-if="errors?.name">{{ errors.name[0] }}</span>
                             </div>
 
                             <div class="form-group">
                                 <label for="email">Email</label>
-                                <Field name="email" type="email" class="form-control" :class="{'is-invalid': errors.email}"
-                                    id="email" aria-describedby="nameHelp" placeholder="Enter an Email" />
-                                <span class="invalid-feedback">{{ errors.email }}</span>
+                                <input v-model="userForm.email" type="email" class="form-control" :class="{'is-invalid': errors?.email}"
+                                    id="email" placeholder="Enter an Email" />
+                                <span class="invalid-feedback" v-if="errors?.email">{{ errors.email[0] }}</span>
                             </div>
 
                             <div class="form-group">
                                 <label for="email">Password</label>
-                                <Field name="password" type="password" class="form-control" :class="{'is-invalid': errors.password}" id="password" aria-describedby="nameHelp"
-                                    placeholder="Enter password" />
-                                <span class="invalid-feedback">{{ errors.password }}</span>
+                                <input v-model="userForm.password" type="password" class="form-control" :class="{'is-invalid': errors?.password}" 
+                                :disabled="editing" id="password" placeholder="Enter password" />
+                                <span class="invalid-feedback" v-if="errors?.password">{{ errors.password[0] }}</span>
                             </div>
                         </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Add</button>
+                        <button type="button" @click="resetForm" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Create</button>
                     </div>
-                </Form>
+                </form>
             </div>
         </div>
     </div>
