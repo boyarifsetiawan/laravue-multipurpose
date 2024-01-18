@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Http\Resources\UserCollection;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 
 class UserController extends Controller
 {
@@ -16,7 +17,7 @@ class UserController extends Controller
     {
         $users = User::all();
 
-        return new UserCollection($users);
+        return UserResource::collection($users);
     }
 
     public function store(StoreUserRequest $request)
@@ -49,5 +50,11 @@ class UserController extends Controller
         return response()->json([
             'data' => $user
         ]);
+    }
+
+    public function destroy(User $user)
+    {
+        $user->delete();
+        return response()->noContent();
     }
 }

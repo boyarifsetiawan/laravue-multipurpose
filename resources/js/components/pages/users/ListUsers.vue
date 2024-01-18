@@ -6,6 +6,7 @@ import { useToastr } from "../../../toastr";
 const toastr = useToastr();
 const users = ref({});
 const editing = ref(false);
+const userIdBeingDeleted = ref(null);
 
 var errors = ref({});
 const userForm = reactive({
@@ -14,6 +15,22 @@ const userForm = reactive({
     email: "",
     password: "",
 });
+
+//show modal confirm delete
+const modalConfirmDelete = (user) => {
+    $("#modalConfirmDelete").modal("show");
+    userIdBeingDeleted.value = user.id;
+};
+
+const deleteUser = () => {
+    axios.delete(`/api/users/${userIdBeingDeleted.value}`).then(() => {
+        toastr.success("User deleted successfully!");
+        $("#modalConfirmDelete").modal("hide");
+        users.value = users.value.filter(
+            (user) => user.id !== userIdBeingDeleted.value
+        );
+    });
+};
 
 //show modal for create
 const addUser = () => {
@@ -25,9 +42,10 @@ const createUser = () => {
     axios
         .post("/api/users", userForm)
         .then((res) => {
+            users.value.unshift(res.data.data);
             $("#userFormModal").modal("hide");
             resetForm();
-            getUsers();
+            // getUsers();
             toastr.success("User created successfuly!");
         })
         .catch((error) => {
@@ -118,11 +136,16 @@ onMounted(() => {
                         <th scope="row">{{ index + 1 }}</th>
                         <td>{{ user.name }}</td>
                         <td>{{ user.email }}</td>
-                        <td>-</td>
-                        <td>-</td>
+                        <td>{{ user.created_at }}</td>
+                        <td>{{ user.role }}</td>
                         <td>
                             <a href="#" @click.prevent="editUser(user)"
                                 ><i class="fa fa-edit"></i
+                            ></a>
+                            <a
+                                href="#"
+                                @click.prevent="modalConfirmDelete(user)"
+                                ><i class="fa fa-trash text-danger ml-2"></i
                             ></a>
                         </td>
                     </tr>
@@ -227,6 +250,54 @@ onMounted(() => {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirm delete -->
+    <div
+        class="modal fade"
+        id="modalConfirmDelete"
+        data-backdrop="static"
+        data-keyboard="false"
+        tabindex="-1"
+        aria-labelledby="staticBackdropLabel"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">
+                        <span>Delete User</span>
+                    </h5>
+                    <button
+                        type="button"
+                        class="close"
+                        data-dismiss="modal"
+                        aria-label="Close"
+                    >
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <span>Are you sure want to delete this user ?</span>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-dismiss="modal"
+                    >
+                        Close
+                    </button>
+                    <button
+                        @click.prevent="deleteUser"
+                        type="button"
+                        class="btn btn-primary"
+                    >
+                        Delete
+                    </button>
+                </div>
             </div>
         </div>
     </div>
