@@ -16,6 +16,17 @@ const userForm = reactive({
     password: "",
 });
 
+const roles = ref([
+    {
+        name: 'ADMIN',
+        value: 1
+    },
+    {
+        name: 'USER',
+        value: 2
+    }
+])
+
 //show modal confirm delete
 const modalConfirmDelete = (user) => {
     $("#modalConfirmDelete").modal("show");
@@ -42,10 +53,10 @@ const createUser = () => {
     axios
         .post("/api/users", userForm)
         .then((res) => {
-            users.value.unshift(res.data.data);
+            // users.value.unshift(res.data.data);
             $("#userFormModal").modal("hide");
             resetForm();
-            // getUsers();
+            getUsers();
             toastr.success("User created successfuly!");
         })
         .catch((error) => {
@@ -78,6 +89,15 @@ const updateUser = () => {
                 errors.value = error.response.data.errors;
             }
         });
+};
+
+const changeRole = (user, role) => {
+    axios.patch(`/api/users/${user.id}/change-role`, {
+        role: role
+    })
+    .then(() => {
+        toastr.success('Role changed successfully!')
+    })
 };
 
 const resetForm = () => {
@@ -137,7 +157,11 @@ onMounted(() => {
                         <td>{{ user.name }}</td>
                         <td>{{ user.email }}</td>
                         <td>{{ user.created_at }}</td>
-                        <td>{{ user.role }}</td>
+                        <td>
+                            <select class="form-control text-sm" @change="changeRole(user, $event.target.value)">
+                               <option v-for="role in roles" :value="role.value" :selected="user.role == role.name">{{ role.name }}</option>
+                            </select>
+                        </td>
                         <td>
                             <a href="#" @click.prevent="editUser(user)"
                                 ><i class="fa fa-edit"></i
