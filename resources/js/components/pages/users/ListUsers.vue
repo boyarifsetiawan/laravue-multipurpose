@@ -1,10 +1,11 @@
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import axios from "axios";
 import { useToastr } from "../../../toastr";
+import { debounce } from "lodash";
 
 const toastr = useToastr();
-const users = ref({});
+const users = ref([]);
 const editing = ref(false);
 const userIdBeingDeleted = ref(null);
 
@@ -91,6 +92,7 @@ const updateUser = () => {
         });
 };
 
+// change role
 const changeRole = (user, role) => {
     axios.patch(`/api/users/${user.id}/change-role`, {
         role: role
@@ -99,6 +101,26 @@ const changeRole = (user, role) => {
         toastr.success('Role changed successfully!')
     })
 };
+
+// search
+const searchQuery = ref(null)
+
+const search = () => {
+    axios.get('/api/users/search', {
+        params: {
+            query: searchQuery.value
+        }
+    }).then( response => {
+        console.log(response)
+        users.value = response.data
+    }).catch( error => {
+        console.log(error)
+    })
+}
+
+watch(searchQuery, debounce(() => {
+    search()
+}, 300))
 
 const resetForm = () => {
     errors.value = "";
@@ -134,9 +156,14 @@ onMounted(() => {
             </div>
         </div>
         <!-- Button trigger modal -->
-        <button type="button" class="btn btn-primary" @click="addUser">
-            Create User
-        </button>
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-primary" @click="addUser">
+                Create User
+            </button>
+            <div>
+                <input type="text" class="form-control" v-model="searchQuery"/>
+            </div>
+        </div>
     </div>
     <div class="content">
         <div class="container-fluid">
@@ -151,7 +178,7 @@ onMounted(() => {
                         <th scope="col">Options</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody v-if="users.length > 0">
                     <tr v-for="(user, index) in users" :key="user.id">
                         <th scope="row">{{ index + 1 }}</th>
                         <td>{{ user.name }}</td>
@@ -171,6 +198,13 @@ onMounted(() => {
                                 @click.prevent="modalConfirmDelete(user)"
                                 ><i class="fa fa-trash text-danger ml-2"></i
                             ></a>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody v-else>
+                    <tr>
+                        <td colspan="6">
+                            No Results..
                         </td>
                     </tr>
                 </tbody>
