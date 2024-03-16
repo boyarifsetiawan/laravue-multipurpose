@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import Dashboard from '../components/Dashboard.vue';
 import Appointments from '../components/pages/appointments/ListAppointments.vue';
+import AppointmentForm from '../components/pages/appointments/AppointmentForm.vue';
 import Users from '../components/pages/users/ListUsers.vue';
 import Settings from '../components/pages/settings/UpdateSetting.vue';
 import Profile from '../components/pages/profile/UpdateProfile.vue';
@@ -16,6 +17,16 @@ const routes =
             path: '/admin/appointments',
             name: 'admin.appointments',
             component: Appointments
+        },
+        {
+            path: '/admin/appointments/create',
+            name: 'admin.appointments.create',
+            component: AppointmentForm
+        },
+        {
+            path: '/admin/appointments/:id/edit',
+            name: 'admin.appointments.edit',
+            component: AppointmentForm
         },
         {
             path: '/admin/users',

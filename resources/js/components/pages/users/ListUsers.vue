@@ -1,13 +1,18 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from "vue";
 import axios from "axios";
+import { Bootstrap4Pagination } from 'laravel-vue-pagination';
 import { useToastr } from "../../../toastr";
 import { debounce } from "lodash";
 
+
 const toastr = useToastr();
-const users = ref([]);
+const users = ref({'data': []});
 const editing = ref(false);
 const userIdBeingDeleted = ref(null);
+const selectedUsers = ref([]);
+const selectAll = ref(false);
+
 
 var errors = ref({});
 const userForm = reactive({
@@ -38,9 +43,7 @@ const deleteUser = () => {
     axios.delete(`/api/users/${userIdBeingDeleted.value}`).then(() => {
         toastr.success("User deleted successfully!");
         $("#modalConfirmDelete").modal("hide");
-        users.value = users.value.filter(
-            (user) => user.id !== userIdBeingDeleted.value
-        );
+        users.value.data = users.value.data.filter(user => user.id !== userIdBeingDeleted.value);
     });
 };
 
@@ -122,6 +125,42 @@ watch(searchQuery, debounce(() => {
     search()
 }, 300))
 
+//Bulk Delete
+const toggleSelection = (user) => {
+    const index = selectedUsers.value.indexOf(user.id);
+
+    if( index === -1){
+        selectedUsers.value.push(user.id);
+    }else{
+        selectedUsers.value.splice(index, 1);
+    }
+    console.log(selectedUsers.value)
+}
+
+const bulkDelete = () => {
+    axios.delete('/api/users', {
+        data: {
+            ids: selectedUsers.value
+        }
+    })
+    .then( res => {
+        users.value.data = users.value.data.filter(user => !selectedUsers.value.includes(user.id));
+        selectedUsers.value = [];
+        selectAll.value = false;
+        toastr.success(res.data.message);
+    })
+}
+
+const selectAllUsers = () => {
+    if (selectAll.value) {
+        selectedUsers.value = users.value.data.map(user => user.id);
+    }else {
+        selectedUsers.value = [];
+    }
+    console.log(selectedUsers.value);
+}
+
+
 const resetForm = () => {
     errors.value = "";
     userForm.name = null;
@@ -129,12 +168,15 @@ const resetForm = () => {
     userForm.password = null;
 };
 
-const getUsers = () => {
-    axios.get("/api/users").then((response) => {
-        users.value = response.data.data;
+const getUsers = (page) => {
+    axios.get(`/api/users?page=${page}`).then((response) => {
+        users.value = response.data;
     });
 };
 
+const listUsers = (page) => {
+    getUsers(page);
+}
 onMounted(() => {
     getUsers();
 });
@@ -157,9 +199,14 @@ onMounted(() => {
         </div>
         <!-- Button trigger modal -->
         <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-primary" @click="addUser">
-                Create User
-            </button>
+            <div>
+                <button type="button" class="btn btn-primary" @click="addUser">
+                <i class="fa fa-plus-circle mr-1"></i> Create User
+                </button>
+                <button v-if="selectedUsers.length > 0" type="button" class="btn btn-danger ml-2" @click="bulkDelete">
+                <i class="fa fa-trash-circle" ></i> Delete Users
+                </button>
+            </div>
             <div>
                 <input type="text" class="form-control" v-model="searchQuery"/>
             </div>
@@ -170,6 +217,9 @@ onMounted(() => {
             <table class="table">
                 <thead>
                     <tr>
+                        <th scope="col">
+                        <input type="checkbox" v-model="selectAll" @change="selectAllUsers" />
+                        </th>
                         <th scope="col">No</th>
                         <th scope="col">Name</th>
                         <th scope="col">Email</th>
@@ -178,15 +228,18 @@ onMounted(() => {
                         <th scope="col">Options</th>
                     </tr>
                 </thead>
-                <tbody v-if="users.length > 0">
-                    <tr v-for="(user, index) in users" :key="user.id">
-                        <th scope="row">{{ index + 1 }}</th>
+                <tbody v-if="users.data.length > 0">
+                    <tr v-for="(user, index) in users.data" :key="user.id">
+                        <td>
+                            <input type="checkbox" :checked="selectAll" @change="toggleSelection(user)" />
+                        </td>
+                        <td>{{ index +1 }}</td>
                         <td>{{ user.name }}</td>
                         <td>{{ user.email }}</td>
                         <td>{{ user.created_at }}</td>
                         <td>
                             <select class="form-control text-sm" @change="changeRole(user, $event.target.value)">
-                               <option v-for="role in roles" :value="role.value" :selected="user.role == role.name">{{ role.name }}</option>
+                               <option v-for="role in roles" :key="role.name" :value="role.value" :selected="user.role == role.name">{{ role.name }}</option>
                             </select>
                         </td>
                         <td>
@@ -209,6 +262,7 @@ onMounted(() => {
                     </tr>
                 </tbody>
             </table>
+            <Bootstrap4Pagination :data="users" @pagination-change-page="listUsers"/>
         </div>
     </div>
 

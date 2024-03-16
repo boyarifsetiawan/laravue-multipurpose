@@ -15,7 +15,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all();
+        $users = User::paginate(5);
 
         return UserResource::collection($users);
     }
@@ -67,10 +67,18 @@ class UserController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function search(){
+    public function search()
+    {
         $searchQuery = request('query');
-        $user = User::where('name', 'like', "%{$searchQuery}%")->get();
+        $user = User::where('name', 'like', "%{$searchQuery}%")->paginate(5);
 
-        return response()->json($user);
+        return UserResource::collection($user);
+    }
+
+    public function bulkDelete()
+    {
+        User::whereIn('id', request('ids'))->delete();
+
+        return response()->json(['message' => 'User deleted successfully!']);
     }
 }
