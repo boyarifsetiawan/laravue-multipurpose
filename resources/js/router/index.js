@@ -6,8 +6,15 @@ import AppointmentForm from '../components/pages/appointments/AppointmentForm.vu
 import Users from '../components/pages/users/ListUsers.vue';
 import Settings from '../components/pages/settings/UpdateSetting.vue';
 import Profile from '../components/pages/profile/UpdateProfile.vue';
+import Login from '../components/pages/auth/Login.vue';
+
 const routes =
     [
+        {
+            path: '/login',
+            name: 'admin.login',
+            component: Login
+        },
         {
             path: '/admin/dashboard',
             name: 'admin.dashboard',
