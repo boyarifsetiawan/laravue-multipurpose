@@ -18,15 +18,15 @@ class AppointmentController extends Controller
             })
             ->latest()
             ->paginate()
-            ->through(fn ($appoinment) => [
-                'id' => $appoinment->id,
-                'start_time' => $appoinment->start_time->format('Y-m-d h:i A'),
-                'end_time' => $appoinment->end_time->format('Y-m-d h:i A'),
+            ->through(fn ($appointment) => [
+                'id' => $appointment->id,
+                'start_time' => $appointment->start_time->format('Y-m-d h:i A'),
+                'end_time' => $appointment->end_time->format('Y-m-d h:i A'),
                 'status' => [
-                    'name' => $appoinment->status->name,
-                    'color' => $appoinment->status->color(),
+                    'name' => $appointment->status->name,
+                    'color' => $appointment->status->color(),
                 ],
-                'client' => $appoinment->client,
+                'client' => $appointment->client,
             ]);
     }
 
@@ -76,5 +76,12 @@ class AppointmentController extends Controller
         );
         $appointment->update($validated);
         return response()->json(['success' => true]);
+    }
+
+    public function destroy(Appointment $appointment)
+    {
+        $appointment->delete();
+
+        return response()->json(['success' => true], 200);
     }
 }

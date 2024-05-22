@@ -12,6 +12,8 @@ const editing = ref(false);
 const userIdBeingDeleted = ref(null);
 const selectedUsers = ref([]);
 const selectAll = ref(false);
+// search
+const searchQuery = ref(null)
 
 
 var errors = ref({});
@@ -68,7 +70,7 @@ const createUser = () => {
                 errors.value = error.response.data.errors;
             }
         });
-};
+    };
 // edit User modal
 const editUser = (user) => {
     editing.value = true;
@@ -105,24 +107,9 @@ const changeRole = (user, role) => {
     })
 };
 
-// search
-const searchQuery = ref(null)
-
-const search = () => {
-    axios.get('/api/users/search', {
-        params: {
-            query: searchQuery.value
-        }
-    }).then( response => {
-        console.log(response)
-        users.value = response.data
-    }).catch( error => {
-        console.log(error)
-    })
-}
 
 watch(searchQuery, debounce(() => {
-    search()
+    getUsers()
 }, 300))
 
 //Bulk Delete
@@ -168,8 +155,14 @@ const resetForm = () => {
     userForm.password = null;
 };
 
+
 const getUsers = (page) => {
-    axios.get(`/api/users?page=${page}`).then((response) => {
+    axios.get(`/api/users?page=${page}`, 
+    {
+        params: {
+                query: searchQuery.value
+            }
+    }).then((response) => {
         users.value = response.data;
     });
 };
